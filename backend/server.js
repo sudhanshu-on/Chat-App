@@ -28,7 +28,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: clientOrigins,
+    origin: process.env.CLIENT_URL,
     credentials: true,
   },
 });
@@ -62,7 +62,7 @@ io.on("connection", (socket) => {
 
 // middleware
 app.use(express.json());
-app.use(cors({ credentials: true, origin: clientOrigins }));
+app.use(cors({ credentials: true, origin: process.env.CLIENT_URL }));
 app.use(cookieParser());
 
 // test route
@@ -76,7 +76,7 @@ app.use("/api/conversations", conversationRoutes);
 
 app.use("/api/messages", messageRoutes);
 
-const PORT = process.env.PORT 
+const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
   console.log(`Server running on port http://localhost:${PORT}`);
