@@ -1,0 +1,76 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+:root {
+  --ink: #1a2f36;
+  --ink-muted: #5c6d73;
+  --line-soft: #d5dfda;
+  --surface: rgba(255, 255, 255, 0.76);
+  --surface-strong: #fff;
+
+  --accent: #118168;
+  --accent-strong: #0b6652;
+  --accent-soft: #ebf7f4;
+  --warning: #aa4135;
+
+  --font-display: "Space Grotesk", "Segoe UI", sans-serif;
+  --font-body: "Space Grotesk", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", Consolas, monospace;
+
+  font-family: var(--font-body);
+  color: var(--ink);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(1100px 520px at 8% -10%, rgba(255, 193, 99, 0.42), transparent 60%),
+    radial-gradient(900px 450px at 85% 0%, rgba(104, 202, 173, 0.28), transparent 62%),
+    linear-gradient(175deg, #fef8e9 0%, #f7faf8 35%, #f0f7f8 100%);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    0deg,
+    transparent 24%,
+    rgba(16, 39, 47, 0.04) 25%,
+    rgba(16, 39, 47, 0.04) 26%,
+    transparent 27%,
+    transparent 74%,
+    rgba(16, 39, 47, 0.04) 75%,
+    rgba(16, 39, 47, 0.04) 76%,
+    transparent 77%,
+    transparent
+  );
+  background-size: 28px 28px;
+  opacity: 0.2;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}
