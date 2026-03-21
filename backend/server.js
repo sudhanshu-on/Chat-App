@@ -16,13 +16,6 @@ dotenv.config();
 connectDB(); //db connection
 
 const app = express();
-const defaultClientOrigins = ["http://localhost:5173", "http://localhost:3000"];
-const clientOrigins = process.env.CLIENT_URL
-  ? process.env.CLIENT_URL
-      .split(",")
-      .map((origin) => origin.trim())
-      .filter(Boolean)
-  : defaultClientOrigins;
 
 const server = http.createServer(app);
 
