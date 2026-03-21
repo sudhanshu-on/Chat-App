@@ -4,7 +4,7 @@ import { apiRequest } from "./lib/api.js";
 import "./App.css";
 
 const LOCAL_USER_STORAGE_KEY = "chat-app:user";
-const SOCKET_BASE_URL = import.meta.env.VITE_SOCKET_URL
+const SOCKET_BASE_URL = import.meta.env.VITE_SOCKET_URL;
 
 const sortConversationsByRecent = (left, right) => {
   const leftDate = new Date(left.updatedAt || 0).getTime();
