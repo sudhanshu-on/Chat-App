@@ -222,6 +222,11 @@
   background: #fdf0ee;
 }
 
+.socket-indicator.online-count {
+  color: #225d4d;
+  background: #e9f6ef;
+}
+
 .notice-message.in-app {
   margin: 0;
   padding: 8px 22px;
@@ -348,6 +353,31 @@
   animation: rise-in 0.45s ease both;
 }
 
+.thread-mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.mode-button {
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink-muted);
+  padding: 9px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.mode-button.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
 .thread-header {
   padding: 18px 20px;
   border-bottom: 1px solid var(--line-soft);
@@ -389,6 +419,10 @@
 
 .message-row.other {
   align-self: flex-start;
+}
+
+.message-row.global {
+  max-width: 92%;
 }
 
 .message-bubble {

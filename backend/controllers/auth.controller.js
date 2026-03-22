@@ -4,11 +4,13 @@ import User from "../models/user.models.js";
 import asyncHandler from "express-async-handler";
 import ApiResponse from "../utils/apiResponse.utils.js";
 import ApiError from "../utils/apiError.utils.js";
+import env from "../config/env.js";
+
 const setCookies = (res, token) => {
   res.cookie("accessToken", token, {
     httpOnly: true,
-    secure: true,
-    sameSite: "none",
+    secure: env.cookieSecure,
+    sameSite: env.cookieSameSite,
     maxAge: 15 * 60 * 1000, // 15 minutes
   });
 };
@@ -25,8 +27,8 @@ const signin = asyncHandler(async (req, res) => {
   if (!passwordIsValid) {
     throw new ApiError(401, "Invalid password");
   }
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRATION || "15m",
+  const token = jwt.sign({ id: user._id }, env.jwtSecret, {
+    expiresIn: env.jwtExpiration,
   });
   setCookies(res, token);
   return res.status(200).json(
@@ -47,8 +49,8 @@ const signup = asyncHandler(async (req, res) => {
     email,
     password: hashedPassword,
   });
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRATION || "15m",
+  const token = jwt.sign({ id: user._id }, env.jwtSecret, {
+    expiresIn: env.jwtExpiration,
   });
   setCookies(res, token);
   return res.status(200).json(

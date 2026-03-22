@@ -4,7 +4,7 @@ import { apiRequest } from "./lib/api.js";
 import "./App.css";
 
 const LOCAL_USER_STORAGE_KEY = "chat-app:user";
-const SOCKET_BASE_URL = import.meta.env.VITE_SOCKET_URL;
+const SOCKET_BASE_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
 
 const sortConversationsByRecent = (left, right) => {
   const leftDate = new Date(left.updatedAt || 0).getTime();
@@ -67,6 +67,11 @@ function App() {
   const [loadedThreads, setLoadedThreads] = useState({});
   const [unreadByConversation, setUnreadByConversation] = useState({});
   const [messageDraft, setMessageDraft] = useState("");
+  const [globalMessageDraft, setGlobalMessageDraft] = useState("");
+  const [globalMessages, setGlobalMessages] = useState([]);
+  const [isGlobalSending, setIsGlobalSending] = useState(false);
+  const [onlineCount, setOnlineCount] = useState(0);
+  const [activeThreadView, setActiveThreadView] = useState("private");
   const [notice, setNotice] = useState("");
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [isAppLoading, setIsAppLoading] = useState(false);
@@ -77,6 +82,7 @@ function App() {
   const socketRef = useRef(null);
   const selectedConversationRef = useRef(selectedConversationId);
   const messageTailRef = useRef(null);
+  const globalMessageTailRef = useRef(null);
 
   useEffect(() => {
     selectedConversationRef.current = selectedConversationId;
@@ -232,6 +238,50 @@ function App() {
       setSocketStatus("offline");
     });
 
+    socket.on("online_count", (payload) => {
+      const nextCount = Number(payload?.count || 0);
+      setOnlineCount(Number.isNaN(nextCount) ? 0 : nextCount);
+    });
+
+    socket.on("global_history", (payload) => {
+      const nextMessages = Array.isArray(payload) ? payload : [];
+      setGlobalMessages(nextMessages);
+    });
+
+    socket.on("receive_global_message", (payload) => {
+      const text = payload?.text;
+
+      if (!text || typeof text !== "string") {
+        return;
+      }
+
+      const incomingMessage = {
+        _id: payload._id || `tmp-${Date.now()}-${Math.random()}`,
+        text,
+        createdAt: payload.createdAt || new Date().toISOString(),
+      };
+
+      setGlobalMessages((previousValue) => {
+        if (previousValue.some((item) => item._id === incomingMessage._id)) {
+          return previousValue;
+        }
+
+        return [...previousValue, incomingMessage];
+      });
+    });
+
+    socket.on("rate_limit_error", (payload) => {
+      const message = payload?.message || "Global chat rate limit reached";
+      const retryAfterMs = Number(payload?.retryAfterMs || 0);
+
+      if (retryAfterMs > 0) {
+        setNotice(`${message}. Try again in ${Math.ceil(retryAfterMs / 1000)}s.`);
+        return;
+      }
+
+      setNotice(message);
+    });
+
     socket.on("newMessage", (payload) => {
       const incomingMessage = payload?.message;
       const incomingConversationId = incomingMessage?.conversationId;
@@ -318,6 +368,10 @@ function App() {
   useEffect(() => {
     messageTailRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [selectedConversationId, activeMessages.length]);
+
+  useEffect(() => {
+    globalMessageTailRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [globalMessages.length]);
 
   const handleChangeAuthForm = (event) => {
     const { name, value } = event.target;
@@ -441,6 +495,28 @@ function App() {
     }
   };
 
+  const handleSendGlobalMessage = (event) => {
+    event.preventDefault();
+
+    const socket = socketRef.current;
+    const trimmedMessage = globalMessageDraft.trim();
+
+    if (!socket || socketStatus !== "online" || !trimmedMessage) {
+      return;
+    }
+
+    setIsGlobalSending(true);
+    setGlobalMessageDraft("");
+
+    socket.emit("send_global_message", {
+      text: trimmedMessage,
+    });
+
+    setTimeout(() => {
+      setIsGlobalSending(false);
+    }, 180);
+  };
+
   const handleLocalSignOut = () => {
     setCurrentUser(null);
     setUsers([]);
@@ -450,6 +526,10 @@ function App() {
     setLoadedThreads({});
     setUnreadByConversation({});
     setMessageDraft("");
+    setGlobalMessageDraft("");
+    setGlobalMessages([]);
+    setOnlineCount(0);
+    setActiveThreadView("private");
 
     if (socketRef.current) {
       socketRef.current.disconnect();
@@ -570,6 +650,7 @@ function App() {
           </div>
 
           <div className="topbar-actions">
+            <span className="socket-indicator online-count">online {onlineCount}</span>
             <span className={`socket-indicator ${socketStatus}`}>{socketStatus}</span>
             <button className="secondary-button" onClick={handleLocalSignOut} type="button">
               Sign out
@@ -640,7 +721,24 @@ function App() {
           </aside>
 
           <section className="thread">
-            {selectedConversation ? (
+            <div className="thread-mode-switch" role="tablist" aria-label="Thread mode">
+              <button
+                className={`mode-button ${activeThreadView === "private" ? "active" : ""}`}
+                onClick={() => setActiveThreadView("private")}
+                type="button"
+              >
+                Private chat
+              </button>
+              <button
+                className={`mode-button ${activeThreadView === "global" ? "active" : ""}`}
+                onClick={() => setActiveThreadView("global")}
+                type="button"
+              >
+                Global room (anonymous)
+              </button>
+            </div>
+
+            {activeThreadView === "private" && selectedConversation ? (
               <>
                 <header className="thread-header">
                   <h3>{selectedConversation.partnerName}</h3>
@@ -684,12 +782,55 @@ function App() {
                   </button>
                 </form>
               </>
-            ) : (
+            ) : null}
+
+            {activeThreadView === "private" && !selectedConversation ? (
               <div className="empty-thread">
                 <h3>Select a conversation</h3>
                 <p>Start with someone from the People list to begin chatting.</p>
               </div>
-            )}
+            ) : null}
+
+            {activeThreadView === "global" ? (
+              <>
+                <header className="thread-header">
+                  <h3>Global Room</h3>
+                  <p>Anonymous mode enabled. Only message text is shared.</p>
+                </header>
+
+                <div className="thread-body">
+                  {globalMessages.length === 0 ? (
+                    <p className="muted-text">No global messages yet. Say hello to everyone.</p>
+                  ) : null}
+
+                  {globalMessages.map((message) => (
+                    <article className="message-row other global" key={message._id}>
+                      <p className="message-bubble">{message.text}</p>
+                      <time>{formatMessageTime(message.createdAt)}</time>
+                    </article>
+                  ))}
+
+                  <div ref={globalMessageTailRef} />
+                </div>
+
+                <form className="composer" onSubmit={handleSendGlobalMessage}>
+                  <textarea
+                    disabled={isGlobalSending || socketStatus !== "online"}
+                    onChange={(event) => setGlobalMessageDraft(event.target.value)}
+                    placeholder="Type an anonymous global message"
+                    rows={1}
+                    value={globalMessageDraft}
+                  />
+                  <button
+                    className="cta-button"
+                    disabled={isGlobalSending || socketStatus !== "online" || !globalMessageDraft.trim()}
+                    type="submit"
+                  >
+                    {isGlobalSending ? "Sending..." : "Send"}
+                  </button>
+                </form>
+              </>
+            ) : null}
           </section>
         </div>
       </section>
