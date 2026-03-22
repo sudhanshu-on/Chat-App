@@ -27,7 +27,7 @@ const apiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: env.isProduction ? 300 : 1500,
   standardHeaders: true,
-  legacyHeaders: false,
+  legacyHeaders: true,
 });
 
 const isOriginAllowed = (origin) => {
@@ -61,7 +61,7 @@ setupSocketHandlers(io);
 // middleware
 app.use(
   helmet({
-    crossOriginResourcePolicy: false,
+    crossOriginResourcePolicy: true,
   }),
 );
 app.use(express.json({ limit: "1mb" }));
